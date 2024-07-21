@@ -114,8 +114,8 @@ db_menu() {
              create_table "$db_name";;
              #echo "Create Table" ;;
             2)
-            #list_table
-             echo "List Table" ;; 
+             list_table "$db_name" ;;
+             #echo "List Table" ;; 
             3) 
             #drop_table
               echo "drop table" ;;
@@ -147,7 +147,7 @@ create_table()
     read -p "Name your table: 
     " table_name
 
-    if [ -f "$DB_DIR/$db_name/$table_name" ]; then
+    if [ -f "$DB_PATH/$db_name/$table_name" ]; then
         echo "Table already exists!
         "
         return
@@ -216,9 +216,7 @@ create_table()
 
 list_table() {
     local db_name=$1
-
-
-
+    ls $DB_PATH/$db_name/
 
 }
 
