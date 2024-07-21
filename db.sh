@@ -117,8 +117,8 @@ db_menu() {
              list_table "$db_name" ;;
              #echo "List Table" ;; 
             3) 
-            #drop_table
-              echo "drop table" ;;
+             drop_table "$db_name";;
+             #echo "drop table" ;;
             4)
             #insert_into_table
               echo "insert into table" ;;
@@ -216,7 +216,26 @@ create_table()
 
 list_table() {
     local db_name=$1
+    echo "The tables inside your database '$db_name' are :
+    "
     ls $DB_PATH/$db_name/
+
+}
+
+drop_table() {
+    local db_name=$1
+    read -p "Enter name of table to drop: 
+            Here is a reminder of this database tables:
+            $(list_table "$1")
+            so which one to drop from them? " table_name
+
+    if [ -f "$DB_PATH/$db_name/$table_name" ] ; then
+        rm "$DB_PATH/$db_name/$table_name"
+        echo "Table '$table_name' is removed ! 
+        "
+    else
+        echo "Table does not exist"
+    fi         
 
 }
 
