@@ -111,7 +111,7 @@ db_menu() {
 
         case $option in 
             1)
-             create_table ;;
+             create_table "$db_name";;
              #echo "Create Table" ;;
             2)
             #list_table
@@ -210,9 +210,15 @@ create_table()
 
     echo "Table '$table_name' is created successfully! :) 
     
-    "
+    "  
 
-    #cat /$DB_PATH/$db_name/$table_name
+}
+
+list_table() {
+    local db_name=$1
+
+
+
 
 }
 
