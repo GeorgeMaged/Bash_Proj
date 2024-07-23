@@ -199,7 +199,7 @@ create_table()
                     ;;
             esac
         done    
-        column_types+=("$col_type") 
+       # column_types+=("$col_type") 
     done               
 
     (
