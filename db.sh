@@ -120,8 +120,8 @@ db_menu() {
              drop_table "$db_name";;
              #echo "drop table" ;;
             4)
-            #insert_into_table
-              echo "insert into table" ;;
+             insert_into_table "$db_name";;
+             #echo "insert into table" ;;
             5)
             #select_from_table
               echo "select from table" ;;
@@ -144,6 +144,7 @@ db_menu() {
 create_table()
 { 
     local db_name=$1
+    pk_flag=false 
     read -p "Name your table: 
     " table_name
 
@@ -198,7 +199,19 @@ create_table()
                     echo "Not supported datatype right now,Please try again :)" 
                     ;;
             esac
-        done    
+        done  
+    if ! $pk_flag; then
+        read -p "Is this column a PK? (y/n): " is_pk
+        if [[ $is_pk == "Y" || $is_pk == "y" ]]; then
+            column_specials+=("PK")
+            pk_flag=true
+        else
+            column_specials+=("-")
+        fi
+    else
+        column_specials+=("-")
+    fi                
+
        # column_types+=("$col_type") 
     done               
 
@@ -206,6 +219,8 @@ create_table()
         IFS=,
         echo "${column_names[*]}"
         echo "${column_types[*]}"
+        echo "${column_specials[*]}"
+
     ) > "$DB_PATH/$db_name/$table_name"
 
     echo "Table '$table_name' is created successfully! :) 
@@ -238,5 +253,106 @@ drop_table() {
     fi         
 
 }
+
+
+
+insert_into_table()
+{
+  local db_name=$1
+  read -p "Enter table name: 
+          " table_name
+
+  if [ ! -f "$DB_PATH/$db_name/$table_name" ]; then 
+
+    echo "Table does not exist!
+    "
+    return
+  fi 
+
+
+  touch $DB_PATH/$db_name/${table_name}.data
+  IFS=, read -r -a column_names <<< "$(sed -n '1p' "$DB_PATH/$db_name/$table_name")"
+  IFS=, read -r -a column_types <<< "$(sed -n '2p' "$DB_PATH/$db_name/$table_name")"
+  IFS=, read -r -a column_specials <<< "$(sed -n '3p' "$DB_PATH/$db_name/$table_name")"
+
+
+
+  pk_index=-1
+  for ((i=0;i<${#column_specials[@]};i++)); do
+
+    if [[ ${column_specials[i]} == "PK" ]]; then
+
+        pk_index=$i
+        break
+    fi
+  done
+
+  if [ $pk_index -eq -1 ]; then
+    echo "No Primary key found."
+    #return
+  fi
+
+
+  values=()
+  for ((i=0;i<${#column_names[@]};i++)); do
+    col_name=${column_names[$i]}
+    col_type=${column_types[$i]}
+    col_special=${column_specials[$i]}
+
+    while true ; do
+
+        read -p "Enter value for $col_name ($col_type) : 
+                " value
+
+        if [[ $col_type == "int" && ! $value =~ ^[0-9]+$ ]]; then
+                echo "Invalid input: $col_name should be an integer."
+                continue
+        elif [[ $col_type == "bool" && ! $value =~ ^(true|false)$ ]]; then
+                echo "Invalid input: $col_name should be true or false."
+                continue
+        elif [[ $col_type == "string" && ! $value =~ ^[a-zA-Z]+$ ]]; then
+                echo "Invalid input: $col_name should be a string."
+                continue
+        fi
+
+        #echo " column_specials = ${column_specials} "
+
+        if [[ $col_special == "PK" ]]; then
+            #echo " I AM IN! "
+            duplicate=false
+            while IFS=, read -r -a row; do
+                if [[ "${row[$pk_index]}" == "$value" ]]; then
+                    #echo " I AM IN IN ! "
+                    duplicate=true
+                    break
+                fi
+            done < "$DB_PATH/$db_name/${table_name}.data"
+
+            if $duplicate; then
+                    echo "Error:Duplicate value for primary key $col_name. "
+                    continue 
+            fi
+        fi
+
+        values+=("$value")
+        break
+
+    done
+
+  done   
+
+
+  (
+        IFS=,
+        echo "${values[*]}"
+  ) >> "$DB_PATH/$db_name/$table_name.data"
+
+  echo "Data inserted into table '$table_name'.
+  
+  "
+
+}           
+
+
 
 main_menu
