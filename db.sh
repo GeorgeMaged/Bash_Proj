@@ -106,6 +106,7 @@ db_menu() {
         echo "6) Delete from table"
         echo "7) Update table"
         echo "8) Back"
+        echo ""
         read -p "Select what option do you want :)
         " option
 
@@ -361,15 +362,23 @@ select_from_table()
 {
     
     local db_name=$1
-
+    echo "What table you want to select from , Reminder of tables you have: 
+    "
     
+    for file in "$DB_PATH/$db_name"/*.data; do
+        table_name=$(basename "$file" .data)
+        echo ""
+        echo "$table_name"
+    done
 
-    read -p "What table you want to select from , Reminder of tables you have:
-        $(list_table "$1")" table_name
+    read -p "What table you want to select from ? " table_name
+
+   
 
     if [ ! -f $DB_PATH/$db_name/$table_name ]; then
-
+        echo ""
         echo " Table does not exist! "
+        echo ""
         return
 
     fi
