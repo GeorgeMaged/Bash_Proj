@@ -234,6 +234,7 @@ list_table() {
     echo "The tables inside your database '$db_name' are :
     "
     ls $DB_PATH/$db_name/
+    echo " "
 
 }
 
@@ -356,54 +357,133 @@ insert_into_table()
 
 
 select_from_table() 
+
 {
     
     local db_name=$1
+
+    
+
     read -p "What table you want to select from , Reminder of tables you have:
         $(list_table "$1")" table_name
 
-    if [! -f $DB_PATH/$db_name/${table_name}.data ]; then
+    if [ ! -f $DB_PATH/$db_name/$table_name ]; then
 
         echo " Table does not exist! "
         return
 
     fi
 
-    IFS=, read -r -a column_names_data <<< "$(sed -n '1p' "$DB_PATH/$db_name/$table_name.data")"
-    IFS=, read -r -a column_types_data <<< "$(sed -n '2p' "$DB_PATH/$db_name/$table_name.data")"
-    IFS=, read -r -a column_specials_data <<< "$(sed -n '3p' "$DB_PATH/$db_name/$table_name.data")"
-    IFS=, read -r -a column_names <<< "$(sed -n '1p' "$DB_PATH/$db_name/$table_name")"
-    IFS=, read -r -a column_types <<< "$(sed -n '2p' "$DB_PATH/$db_name/$table_name")"
-    IFS=, read -r -a column_specials <<< "$(sed -n '3p' "$DB_PATH/$db_name/$table_name")"
+    metadata_file="$DB_PATH/$db_name/$table_name"
+    data_file="$DB_PATH/$db_name/$table_name.data"
+
+    IFS=, read -r -a column_names <<< "$(sed -n '1p' "$metadata_file")"
+    #IFS=, read -r -a column_types <<< "$(sed -n '2p' "$DB_PATH/$db_name/${table_name}")"
+    #IFS=, read -r -a column_specials <<< "$(sed -n '3p' "$DB_PATH/$db_name/${table_name}")"
+    #IFS=, read -r -a column_names < <(cut -d',' -f1 "$DB_PATH/$db_name/$table_name")
 
     echo "Columns in table '$table_name':"
     for ((i=0;i<${#column_names[@]};i++)); do
         echo "$((i+1)). ${column_names[$i]}"
     done      
 
-    read -p "Enter the columns you want to read comma-seperated (1,2..etc) or all : " value
 
-    if [[ $value == "all" ]]; then
-        columns_display=("${column_names_data[@]}")
-    else
-        IFS=, read -r -a columns_selected <<< "$value"
-        columns_display=()
-      #  for col in "${columns_selected[@]}"; do
-         #  if (( col > 0 && col <= ${#column_names[@]} )); then
-
-        
+    while true; do
+        read -p "Enter the columns you want to read comma-seperated (1,2..etc) or all : " value
 
 
 
+        if [[ $value == "all" ]]; then
+           selected_columns=($(seq 1 ${#column_names[@]}))
+         break
+         fi  
+         
+        IFS=, read -r -a selected_columns <<< "$value"
+        flag=true
+        #echo $flag 
+
+        for col in "${selected_columns[@]}"; do
+
+         if ! [[ "$col" =~ ^[0-9]+$ ]] || [ "$col" -lt 1 ] || [ "$col" -gt "${#column_names[@]}" ]; then
+                flag=false
+                echo "Invalid column number : $col . Please enter a valid column numbers (comma_seperated) (1,2..etc)"
+                break 
+       # cut_command=$(IFS=,; echo "${selected_columns[*]}")
+         fi
+        # echo $flag 
+         
+        done  
+
+        if "$flag" = true; then
+            break
+        fi
+
+    done
 
 
+    filter_column=""
+    filter_value=""
+
+    while true; do
+
+     read -p "Do you need to filter rows?(y/n): 
+            " choice
+
+        if [[ "$choice" =~ ^[yYnN]$ ]]; then
+            break
+        else 
+            echo "Please enter 'y' or 'n' :) "
+    
+        fi  
+    done    
+
+    if [[ "$choice" =~ ^[yY]$ ]]; then
+      while true; do
+
+        read -p "Enter the column number to filter : " filter_column
+        if ! [[ "$filter_column" =~ ^[0-9]+$ ]] || [ "$filter_column" -lt 1 ] || [ "$filter_column" -gt "${#column_names[@]}" ]; then
+            echo " Invalid column number" $filter_column . Please enter a valid column number!
+        else 
+
+            read -p "Enter the value to match for column ${column_names[$((filter_column -1))]} : " filter_value
+            break
+
+        fi
+      done 
+    fi    
+
+    header=""
+    for col in "${selected_columns[@]}"; do
+        header+="${column_names[$((col - 1))]},"
+    done
+
+    header=${header%,}  # Remove trailing comma
+    echo "$header" | column -t -s','   
 
 
+    while IFS=, read -r -a row; do
+
+        if [[ "$choice" =~ ^[yY]$ ]]; then
+            if [ "${row[$((filter_column - 1))]}" != "$filter_value" ]; then
+
+                continue
+            fi
+        fi 
+
+        out_row=""
+        for col in "${selected_columns[@]}"; do
+            out_row+="${row[$((col - 1))]},"
+        done
+        out_row=${out_row%,}
+        echo "$out_row" | column -t -s','
+    done < "$data_file"                
 
 
+    #eval $awk_cmd| column -t -s','
 
 
-}
+} 
+
 
 
 
