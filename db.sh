@@ -123,8 +123,8 @@ db_menu() {
              insert_into_table "$db_name";;
              #echo "insert into table" ;;
             5)
-            #select_from_table
-              echo "select from table" ;;
+             select_from_table "$db_name";;
+            #echo "select from table" ;;
             6)
             #delete_from_table
               echo "delete from table"  ;;
@@ -352,6 +352,60 @@ insert_into_table()
   "
 
 }           
+
+
+
+select_from_table() 
+{
+    
+    local db_name=$1
+    read -p "What table you want to select from , Reminder of tables you have:
+        $(list_table "$1")" table_name
+
+    if [! -f $DB_PATH/$db_name/${table_name}.data ]; then
+
+        echo " Table does not exist! "
+        return
+
+    fi
+
+    IFS=, read -r -a column_names_data <<< "$(sed -n '1p' "$DB_PATH/$db_name/$table_name.data")"
+    IFS=, read -r -a column_types_data <<< "$(sed -n '2p' "$DB_PATH/$db_name/$table_name.data")"
+    IFS=, read -r -a column_specials_data <<< "$(sed -n '3p' "$DB_PATH/$db_name/$table_name.data")"
+    IFS=, read -r -a column_names <<< "$(sed -n '1p' "$DB_PATH/$db_name/$table_name")"
+    IFS=, read -r -a column_types <<< "$(sed -n '2p' "$DB_PATH/$db_name/$table_name")"
+    IFS=, read -r -a column_specials <<< "$(sed -n '3p' "$DB_PATH/$db_name/$table_name")"
+
+    echo "Columns in table '$table_name':"
+    for ((i=0;i<${#column_names[@]};i++)); do
+        echo "$((i+1)). ${column_names[$i]}"
+    done      
+
+    read -p "Enter the columns you want to read comma-seperated (1,2..etc) or all : " value
+
+    if [[ $value == "all" ]]; then
+        columns_display=("${column_names_data[@]}")
+    else
+        IFS=, read -r -a columns_selected <<< "$value"
+        columns_display=()
+      #  for col in "${columns_selected[@]}"; do
+         #  if (( col > 0 && col <= ${#column_names[@]} )); then
+
+        
+
+
+
+
+
+
+
+
+
+
+
+}
+
+
 
 
 
